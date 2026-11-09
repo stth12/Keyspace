@@ -1,0 +1,12 @@
+# Operator-only override. Never include this file when starting runtime services.
+services:
+  migrate:
+    volumes:
+      - type: bind
+        source: ./.secrets
+        target: /app/.secrets
+        read_only: false
+      - type: bind
+        source: ./scripts/bootstrap-production.ts
+        target: /app/scripts/bootstrap-production.ts
+        read_only: true

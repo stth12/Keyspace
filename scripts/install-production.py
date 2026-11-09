@@ -161,7 +161,7 @@ def install_material():
 
 
 def bootstrap():
-    compose("--profile", "ops", "run", "--rm", "--no-deps", "-v", f"{SECRETS}:/app/.secrets:rw",
+    compose("-f", "docker-compose.bootstrap.yml", "--profile", "ops", "run", "--rm", "--no-deps",
             "migrate", "npx", "--no-install", "tsx", "scripts/bootstrap-production.ts")
 
 
