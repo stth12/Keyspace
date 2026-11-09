@@ -18,6 +18,8 @@ async function tick() {
       await audit(tx, null, "LicenseExpired", "license", l.id);
     }
   });
+  // Retain pending outbox records for later export; never mark them delivered.
+  if (process.env.AUDIT_MODE === "database-only") return;
   for (let batch = 0; batch < 20 && !stopping; batch++) {
     const delivered = await transaction(async (tx) => {
       const events = await tx.$queryRaw<

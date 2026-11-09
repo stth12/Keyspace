@@ -103,14 +103,24 @@ def prepare():
     for port in (80, 443):
         with socket.socket() as probe:
             probe.bind(("0.0.0.0", port))
-    settings = {"domain": domain, "admin": ask("Логин администратора", "administrator").lower(),
-                "slug": ask("Идентификатор продукта", "keyspace"), "name": ask("Название продукта", "Keyspace"),
-                "offline": yes("Разрешить offline-лицензирование?"), "auditUrl": ask("HTTPS URL внешнего приемника аудита")}
-    if not re.fullmatch(r"[a-z0-9][a-z0-9_]{2,31}", settings["admin"]) or not re.fullmatch(r"[a-z0-9-]{3,64}", settings["slug"]):
-        raise RuntimeError("Некорректный логин или идентификатор продукта.")
-    if not settings["auditUrl"].startswith("https://"):
+    def identifier(label, default, pattern):
+        while True:
+            value = ask(label, default).lower()
+            if re.fullmatch(pattern, value):
+                return value
+            print("Используйте латинские буквы и цифры; не копируйте текст приглашения.")
+    settings = {"domain": domain,
+                "admin": identifier("Логин администратора", "administrator", r"[a-z0-9][a-z0-9_]{2,31}"),
+                "slug": identifier("Идентификатор продукта", "keyspace", r"[a-z0-9-]{3,64}"),
+                "name": ask("Название продукта", "Keyspace"),
+                "offline": yes("Разрешить offline-лицензирование?")}
+    settings["auditUrl"] = ask("HTTPS URL приемника аудита (Enter — тестовый режим, аудит только в БД)")
+    settings["auditMode"] = "external" if settings["auditUrl"] else "database-only"
+    if settings["auditUrl"] and not settings["auditUrl"].startswith("https://"):
         raise RuntimeError("Приемник аудита должен использовать HTTPS.")
-    token = getpass.getpass("Токен приемника аудита (скрытый ввод, Enter если не требуется): ")
+    token = getpass.getpass("Токен приемника аудита (скрытый ввод): ") if settings["auditUrl"] else ""
+    if not settings["auditUrl"]:
+        print("Тестовый режим: аудит сохраняется в PostgreSQL, внешняя доставка отложена.")
     backup = ask("Каталог для будущих резервных копий (вне каталога проекта)", "/var/backups/keyspace")
     backup_path = Path(backup).resolve()
     if not Path(backup).is_absolute() or backup_path == ROOT or ROOT in backup_path.parents:

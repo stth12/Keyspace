@@ -75,7 +75,8 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://lk_runtime:${RUNTIME_DB_PASSWORD}@postgres:5432/licensing
-      AUDIT_SINK_URL: ${AUDIT_SINK_URL:?Set external audit sink}
+      AUDIT_MODE: ${AUDIT_MODE:-external}
+      AUDIT_SINK_URL: ${AUDIT_SINK_URL:-}
       AUDIT_SINK_TOKEN: ${AUDIT_SINK_TOKEN:-}
     depends_on: [backend]
   reverse-proxy:

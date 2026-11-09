@@ -6,8 +6,10 @@ export function validateSettings(input: any) {
   const domain = String(input.domain).toLowerCase();
   if (domain.length > 253 || !/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(domain))
     throw Error("Invalid DNS domain");
-  const sink = new URL(input.auditUrl);
-  if (sink.protocol !== "https:" || sink.username || sink.password || sink.hash)
+  const auditMode = input.auditMode ?? "external";
+  if (!["external", "database-only"].includes(auditMode)) throw Error("Invalid audit mode");
+  const sink = auditMode === "database-only" && input.auditUrl === "" ? null : new URL(input.auditUrl);
+  if (sink && (sink.protocol !== "https:" || sink.username || sink.password || sink.hash))
     throw Error("Audit sink requires HTTPS without credentials or fragment");
   if (!/^[a-z0-9-]{3,64}$/.test(input.slug)) throw Error("Invalid product slug");
   if (typeof input.name !== "string" || input.name.length < 1 || input.name.length > 100)
@@ -15,8 +17,8 @@ export function validateSettings(input: any) {
   if (typeof input.offline !== "boolean") throw Error("Invalid offline setting");
   if (typeof input.auditToken !== "string" || /[\r\n\x00']/.test(input.auditToken))
     throw Error("Unsupported audit token characters");
-  if (/[\r\n\x00']/.test(sink.href)) throw Error("Unsupported audit URL characters");
-  return { domain, auditUrl: sink.href, auditToken: input.auditToken,
+  if (/[\r\n\x00']/.test(sink?.href ?? "")) throw Error("Unsupported audit URL characters");
+  return { domain, auditMode, auditUrl: sink?.href ?? "", auditToken: input.auditToken,
     admin: login.parse(input.admin), slug: input.slug, name: input.name, offline: input.offline };
 }
 
@@ -48,7 +50,7 @@ export function productionMaterial(input: unknown) {
     REDIS_URL: `redis://:${redis}@redis:6379`, JWT_ACCESS_SECRET: secret(),
     LICENSE_HMAC_SECRET: secret(), LICENSE_HMAC_ACTIVE_KEY_ID: "hmac-1",
     LICENSE_HMAC_PREVIOUS_JSON: "{}", OBSERVABILITY_SECRET: secret(), CHACHA_MASTER_KEY: secret(),
-    AUDIT_SINK_URL: settings.auditUrl, AUDIT_SINK_TOKEN: settings.auditToken,
+    AUDIT_MODE: settings.auditMode, AUDIT_SINK_URL: settings.auditUrl, AUDIT_SINK_TOKEN: settings.auditToken,
   };
   return { store, root, env: Object.entries(env).map(([k, v]) => `${k}='${v}'`).join("\n") + "\n" };
 }

@@ -7,6 +7,12 @@ import { canonical } from "../packages/crypto-server/src/index";
 const input = { domain: "licenses.example.com", admin: "Admin", slug: "example",
   name: "Example", offline: true, auditUrl: "https://audit.example.com/events", auditToken: "token$literal#value" };
 describe("production provisioning material", () => {
+  it("requires explicit opt-in for database-only test audit", () => {
+    expect(() => productionMaterial({ ...input, auditUrl: "" })).toThrow();
+    const result = productionMaterial({ ...input, auditMode: "database-only", auditUrl: "", auditToken: "" });
+    expect(parse(result.env).AUDIT_MODE).toBe("database-only");
+    expect(parse(result.env).AUDIT_SINK_URL).toBe("");
+  });
   it("signs the production issuer and keeps private keys out of the manifest", () => {
     const { store, env } = productionMaterial(input);
     expect(store.manifest.payload.issuer).toBe("https://licenses.example.com");
