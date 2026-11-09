@@ -1,0 +1,25 @@
+[package]
+name = "keyspace-desktop"
+version = "1.0.0"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_jcs = "0.1"
+base64 = "0.22"
+ed25519-dalek = { version = "2", features = ["pem"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+keyring = { version = "3", features = ["windows-native", "apple-native", "sync-secret-service"] }
+uuid = { version = "1", features = ["v4"] }
+tokio = { version = "1", features = ["sync"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

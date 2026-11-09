@@ -1,0 +1,96 @@
+name: onlinekeygen-production
+x-api-environment: &api-environment
+  NODE_ENV: production
+  DATABASE_URL: postgresql://lk_runtime:${RUNTIME_DB_PASSWORD}@postgres:5432/licensing
+  REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+  WEB_ORIGIN: https://${DOMAIN:?Set DOMAIN}
+  API_ISSUER: https://${DOMAIN}
+  RP_ID: ${DOMAIN}
+  KEYSTORE_FILE: .secrets/keystore.json
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Set JWT secret}
+  LICENSE_HMAC_SECRET: ${LICENSE_HMAC_SECRET:?Set license secret}
+  LICENSE_HMAC_ACTIVE_KEY_ID: ${LICENSE_HMAC_ACTIVE_KEY_ID}
+  LICENSE_HMAC_PREVIOUS_JSON: ${LICENSE_HMAC_PREVIOUS_JSON:-{}}
+  OBSERVABILITY_SECRET: ${OBSERVABILITY_SECRET:?Set fingerprint secret}
+  CHACHA_MASTER_KEY: ${CHACHA_MASTER_KEY:?Set encryption key}
+x-runtime: &runtime
+  restart: unless-stopped
+  read_only: true
+  tmpfs: ["/tmp"]
+  cap_drop: ["ALL"]
+  security_opt: ["no-new-privileges:true"]
+  networks: [private]
+  mem_limit: 768m
+  cpus: 1.0
+services:
+  postgres:
+    image: postgres:17.6-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: licensing
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set database owner password}
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    networks: [private]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d licensing"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    mem_limit: 1g
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?Set redis password}", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction", "--appendonly", "yes"]
+    networks: [private]
+    volumes: ["redis-data:/data"]
+    mem_limit: 384m
+  migrate:
+    build: {context: ., target: migrate}
+    profiles: ["ops"]
+    env_file: .env
+    environment:
+      MIGRATION_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/licensing
+      DATABASE_URL: postgresql://lk_runtime:${RUNTIME_DB_PASSWORD}@postgres:5432/licensing
+    networks: [private]
+    volumes: ["./.secrets:/app/.secrets:ro"]
+    depends_on:
+      postgres: {condition: service_healthy}
+  backend:
+    <<: *runtime
+    build: {context: ., target: api}
+    environment:
+      <<: *api-environment
+      TRUST_PROXY: loopback,uniquelocal
+    volumes: ["./.secrets/keystore.json:/app/.secrets/keystore.json:ro"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_started}
+  frontend:
+    <<: *runtime
+    build: {context: ., target: web}
+    environment: {API_INTERNAL_URL: "http://backend:4000"}
+  worker:
+    <<: *runtime
+    build: {context: ., target: worker}
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://lk_runtime:${RUNTIME_DB_PASSWORD}@postgres:5432/licensing
+      AUDIT_SINK_URL: ${AUDIT_SINK_URL:?Set external audit sink}
+      AUDIT_SINK_TOKEN: ${AUDIT_SINK_TOKEN:-}
+    depends_on: [backend]
+  reverse-proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80","443:443","443:443/udp"]
+    environment: {DOMAIN: "${DOMAIN}"}
+    volumes: ["./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro","caddy-data:/data","caddy-config:/config"]
+    networks: [private,edge]
+    depends_on: [backend,frontend]
+networks:
+  private:
+  edge:
+volumes:
+  postgres-data:
+  redis-data:
+  caddy-data:
+  caddy-config:

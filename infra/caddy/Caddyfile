@@ -1,0 +1,27 @@
+{$DOMAIN} {
+    tls {
+        protocols tls1.2 tls1.3
+    }
+    request_body {
+        max_size 32KB
+    }
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy no-referrer
+        -Server
+    }
+    handle /api/* {
+        reverse_proxy backend:4000 {
+            header_up -X-Forwarded-For
+            header_up X-Forwarded-For {remote_host}
+            transport http {
+                response_header_timeout 15s
+            }
+        }
+    }
+    handle {
+        reverse_proxy frontend:3000
+    }
+}

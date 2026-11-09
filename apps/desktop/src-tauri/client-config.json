@@ -1,0 +1,6 @@
+{
+  "api_url": "http://localhost:4000",
+  "issuer": "http://localhost:4000",
+  "product_id": "01a0b4fb-373e-7145-8b1a-ac7ced3531ab",
+  "root_public_key": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAJr4arVDomy4tQYnICPD1HaF88pgr9QXn4S3ubPeLXCE=\n-----END PUBLIC KEY-----\n"
+}

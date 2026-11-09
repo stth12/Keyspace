@@ -1,0 +1,5 @@
+{
+  "compilerOptions": {"target":"ES2022","module":"NodeNext","moduleResolution":"NodeNext","strict":true,"esModuleInterop":true,"experimentalDecorators":true,"emitDecoratorMetadata":true,"skipLibCheck":true,"resolveJsonModule":true,"outDir":"dist","rootDir":".","types":["node"]},
+  "include":["apps/api/**/*.ts","apps/worker/**/*.ts","packages/**/*.ts","scripts/**/*.ts","tests/**/*.ts","prisma.config.ts"],
+  "exclude":["node_modules","dist"]
+}

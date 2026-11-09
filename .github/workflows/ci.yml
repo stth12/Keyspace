@@ -1,0 +1,40 @@
+name: verify
+on: [push, pull_request]
+jobs:
+  server-web:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env: {POSTGRES_PASSWORD: ci-only, POSTGRES_DB: licensing}
+        ports: ["15432:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["56379:6379"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24, cache: npm}
+      - run: npm ci
+      - run: npm run setup:dev
+      - run: npm run db:generate
+      - run: npm run db:migrate
+        env: {MIGRATION_DATABASE_URL: "postgresql://postgres:ci-only@localhost:15432/licensing"}
+      - run: npx tsx scripts/provision.ts
+        env: {MIGRATION_DATABASE_URL: "postgresql://postgres:ci-only@localhost:15432/licensing"}
+      - run: npm run typecheck
+      - run: npm test
+        env: {REDIS_URL: "redis://localhost:56379"}
+      - run: npm run build
+      - run: npm audit --audit-level=moderate
+  desktop:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24, cache: npm}
+      - uses: dtolnay/rust-toolchain@stable
+      - run: npm ci
+      - run: npm run build -w @lk/desktop
+      - run: cargo test --locked --manifest-path apps/desktop/src-tauri/Cargo.toml

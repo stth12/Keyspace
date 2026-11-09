@@ -1,0 +1,8 @@
+import {useState} from 'react';
+type Product={id:string;name:string;entitlements:{remaining:number;durations:number[];lifetime:boolean;maxDevices:number|null;expiresAt?:string|null}[]};
+const presets=[3600,43200,86400,259200,604800,1209600,2592000,7776000,15552000,31536000];
+export function canIssue(p:Product){const e=p.entitlements?.[0];return !!e&&e.remaining>0&&(!e.expiresAt||Date.parse(e.expiresAt)>Date.now());}
+export function IssueFields({products,admin}:{products:Product[];admin:boolean}){
+ const options=admin?products:products.filter(canIssue);const [selected,setSelected]=useState(options[0]?.id||'');const chosen=options.find(p=>p.id===selected);const policy=chosen?.entitlements?.[0];const durations=admin?presets:policy?.durations||[];
+ return <><label>Продукт<select name="product" required value={selected} onChange={e=>setSelected(e.target.value)}>{options.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><label>Срок<select name="duration" key={selected} required>{durations.map(n=><option key={n} value={n}>{n<86400?`${n/3600} ч.`:`${n/86400} дн.`}</option>)}{(admin||policy?.lifetime)&&<option value="lifetime">Lifetime</option>}{admin&&<option value="custom">Custom (секунды)</option>}</select></label>{!admin&&<p className="tiny muted">Осталось выдач: {policy?.remaining||0}. Устройств: {policy?.maxDevices??'без лимита'}.</p>}{admin&&<><label>Custom duration, секунд<input name="custom" type="number" min="1" max="315360000" defaultValue="86400"/></label><label>User ID владельца<input name="owner" required placeholder="UUID пользователя"/></label><label>Лимит устройств (пусто — без лимита)<input name="max" type="number" min="1" max="1000" defaultValue="1"/></label></>}</>;
+}

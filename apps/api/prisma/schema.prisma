@@ -1,0 +1,225 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+}
+enum Role {
+  USER
+  ADMIN
+}
+enum AccountStatus {
+  ACTIVE
+  BLOCKED
+}
+enum LicenseStatus {
+  NOT_ACTIVATED
+  ACTIVE
+  EXPIRED
+  REVOKED
+  BLOCKED
+}
+model User {
+  id String @id @db.Uuid
+  login String @unique @db.VarChar(32)
+  passwordHash String
+  role Role @default(USER)
+  status AccountStatus @default(ACTIVE)
+  authVersion Int @default(1)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  licenses License[] @relation("Owner")
+  createdLicenses License[] @relation("Creator")
+  sessions WebSession[]
+  entitlements Entitlement[]
+  credentials Credential[]
+  @@index([status,createdAt,id])
+  @@map("users")
+}
+model Product {
+  id String @id @db.Uuid
+  name String @db.VarChar(100)
+  slug String @unique @db.VarChar(64)
+  enabled Boolean @default(true)
+  offlineEnabled Boolean @default(false)
+  offlineGrace Int @default(86400)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  licenses License[]
+  entitlements Entitlement[]
+  @@map("products")
+}
+model Entitlement {
+  id String @id @db.Uuid
+  userId String @db.Uuid
+  productId String @db.Uuid
+  remaining Int
+  durations Int[]
+  lifetime Boolean @default(false)
+  maxDevices Int? @default(1)
+  expiresAt DateTime? @db.Timestamptz(3)
+  user User @relation(fields:[userId],references:[id])
+  product Product @relation(fields:[productId],references:[id])
+  @@unique([userId,productId])
+  @@map("license_entitlements")
+}
+model License {
+  id String @id @db.Uuid
+  userId String @db.Uuid
+  productId String @db.Uuid
+  keyHash Bytes @unique
+  hmacKeyId String @db.VarChar(64)
+  keyPrefix String @db.Char(4)
+  keySuffix String @db.Char(4)
+  status LicenseStatus @default(NOT_ACTIVATED)
+  durationSeconds BigInt?
+  activatedAt DateTime? @db.Timestamptz(3)
+  expiresAt DateTime? @db.Timestamptz(3)
+  isLifetime Boolean @default(false)
+  maxDevices Int? @default(1)
+  activationCount Int @default(0)
+  createdBy String @db.Uuid
+  version Int @default(1)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
+  blockedAt DateTime? @db.Timestamptz(3)
+  owner User @relation("Owner",fields:[userId],references:[id])
+  creator User @relation("Creator",fields:[createdBy],references:[id])
+  product Product @relation(fields:[productId],references:[id])
+  activations Activation[]
+  sessions AppSession[]
+  @@unique([id,userId,productId])
+  @@index([userId,createdAt,id])
+  @@index([productId,status,expiresAt])
+  @@map("licenses")
+}
+model Activation {
+  id String @id @db.Uuid
+  licenseId String @db.Uuid
+  deviceId String @db.Uuid
+  firstSeenAt DateTime @default(now()) @db.Timestamptz(3)
+  lastSeenAt DateTime @default(now()) @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
+  license License @relation(fields:[licenseId],references:[id])
+  sessions AppSession[]
+  @@unique([licenseId,deviceId])
+  @@unique([id,licenseId,deviceId])
+  @@map("license_activations")
+}
+model AppSession {
+  id String @id @db.Uuid
+  licenseId String @db.Uuid
+  userId String @db.Uuid
+  productId String @db.Uuid
+  activationId String @db.Uuid
+  deviceId String @db.Uuid
+  licenseVersion Int
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  lastSeenAt DateTime @default(now()) @db.Timestamptz(3)
+  absoluteExpiresAt DateTime @db.Timestamptz(3)
+  idleExpiresAt DateTime @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
+  license License @relation(fields:[licenseId,userId,productId],references:[id,userId,productId])
+  activation Activation @relation(fields:[activationId,licenseId,deviceId],references:[id,licenseId,deviceId])
+  refreshTokens RefreshToken[]
+  @@index([licenseId,revokedAt])
+  @@map("application_sessions")
+}
+model WebSession {
+  id String @id @db.Uuid
+  userId String @db.Uuid
+  authVersion Int
+  csrfHash Bytes
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  absoluteExpiresAt DateTime @db.Timestamptz(3)
+  idleExpiresAt DateTime @db.Timestamptz(3)
+  mfaAt DateTime? @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
+  user User @relation(fields:[userId],references:[id])
+  refreshTokens RefreshToken[]
+  @@map("web_sessions")
+}
+model RefreshToken {
+  id String @id @db.Uuid
+  tokenHash Bytes @unique
+  webSessionId String? @db.Uuid
+  appSessionId String? @db.Uuid
+  parentId String? @unique @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  expiresAt DateTime @db.Timestamptz(3)
+  consumedAt DateTime? @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
+  webSession WebSession? @relation(fields:[webSessionId],references:[id])
+  appSession AppSession? @relation(fields:[appSessionId],references:[id])
+  parent RefreshToken? @relation("Chain",fields:[parentId],references:[id])
+  child RefreshToken? @relation("Chain")
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+model AuditLog {
+  id String @id @db.Uuid
+  actorUserId String? @db.Uuid
+  action String @db.VarChar(80)
+  targetType String @db.VarChar(40)
+  targetId String?
+  metadata Json
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  @@index([createdAt,id])
+  @@index([actorUserId,createdAt])
+  @@map("audit_logs")
+}
+model SecurityEvent {
+  id String @id @db.Uuid
+  type String
+  metadata Json
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  @@map("security_events")
+}
+model Outbox {
+  id String @id @db.Uuid
+  auditId String @unique @db.Uuid
+  payload Json
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  deliveredAt DateTime? @db.Timestamptz(3)
+  attempts Int @default(0)
+  @@map("outbox_events")
+}
+model SigningKey {
+  id String @id
+  purpose String
+  publicKey String
+  status String
+  notBefore DateTime @db.Timestamptz(3)
+  verifyUntil DateTime @db.Timestamptz(3)
+  @@map("signing_keys")
+}
+model TokenIssuance {
+  id String @id @db.Uuid
+  licenseId String @db.Uuid
+  sessionId String @db.Uuid
+  keyId String
+  nonce String @unique
+  issuedAt DateTime @db.Timestamptz(3)
+  validUntil DateTime @db.Timestamptz(3)
+  @@map("token_issuances")
+}
+model Idempotency {
+  scope String
+  key String @db.Uuid
+  requestHash String
+  resourceId String @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  @@id([scope,key])
+  @@map("idempotency_records")
+}
+model Credential {
+  id String @id
+  userId String @db.Uuid
+  publicKey Bytes
+  counter BigInt
+  transports String[]
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  user User @relation(fields:[userId],references:[id])
+  @@map("webauthn_credentials")
+}

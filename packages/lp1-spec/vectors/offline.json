@@ -1,0 +1,27 @@
+{
+  "now": 2000000001,
+  "product_id": "01995bee-1111-7111-8111-111111111111",
+  "device_id": "01995bee-1111-7111-8111-111111111111",
+  "issuer": "https://vectors.invalid",
+  "root_public_key": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAiOklalUJnrLP4n5U017i/jT8Q4aYAk1DW/b9R/arU1s=\n-----END PUBLIC KEY-----\n",
+  "manifest": {
+    "payload": {
+      "version": 1,
+      "issuer": "https://vectors.invalid",
+      "issued_at": 1999999900,
+      "expires_at": 2100000000,
+      "keys": [
+        {
+          "id": "vector-offline",
+          "purpose": "offline-license",
+          "status": "ACTIVE",
+          "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAiOklalUJnrLP4n5U017i/jT8Q4aYAk1DW/b9R/arU1s=\n-----END PUBLIC KEY-----\n",
+          "notBefore": 1000,
+          "verifyUntil": 9000000000
+        }
+      ]
+    },
+    "signature": "fJDfDYS_3EOA0BasnxGThJGD6UtjCSzcPOvUEjluhGxCb_Pir2vpTBg9U6fYxnZ_gYGK6be2z5deYNvuppFBAw"
+  },
+  "token": "LP1.eyJlbmNyeXB0aW9uX2FsZ29yaXRobSI6Im5vbmUiLCJrZXlfaWQiOiJ2ZWN0b3Itb2ZmbGluZSIsInNpZ25hdHVyZV9hbGdvcml0aG0iOiJFZDI1NTE5IiwidHlwZSI6Im9mZmxpbmUtbGljZW5zZSIsInZlcnNpb24iOjF9.eyJhdWRpZW5jZSI6Im9mZmxpbmUtbGljZW5zZSIsImRldmljZV9pZCI6IjAxOTk1YmVlLTExMTEtNzExMS04MTExLTExMTExMTExMTExMSIsImlzc3VlZF9hdCI6MjAwMDAwMDAwMCwiaXNzdWVyIjoiaHR0cHM6Ly92ZWN0b3JzLmludmFsaWQiLCJsaWNlbnNlX2V4cGlyZXNfYXQiOm51bGwsImxpY2Vuc2VfaWQiOiIwMTk5NWJlZS0xMTExLTcxMTEtODExMS0xMTExMTExMTExMTEiLCJsaWNlbnNlX3ZlcnNpb24iOjEsImxpZmV0aW1lIjp0cnVlLCJub25jZSI6IlRPRFhYSV9HWjJGTGZlYjVrcVJsV3ciLCJwcm9kdWN0X2lkIjoiMDE5OTViZWUtMTExMS03MTExLTgxMTEtMTExMTExMTExMTExIiwidXNlcl9pZCI6IjAxOTk1YmVlLTExMTEtNzExMS04MTExLTExMTExMTExMTExMSIsInZhbGlkX3VudGlsIjoyMDAwMDg2NDAwLCJ2ZXJzaW9uIjoxfQ.k3gmYD0T4I-Oe2JJZ22CM2kj_MBhhy6Hx93EG4_E40CBOEUlkHw6w8QakwTutZj73VK0Cjpv83hQgGxhkfD_BA"
+}

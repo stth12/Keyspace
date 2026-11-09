@@ -1,0 +1,12 @@
+node_modules
+.git
+.secrets
+.env
+.env.*
+!.env.example
+INSTALLATION_RESULT.txt
+**/__pycache__
+**/target
+**/.next
+**/dist
+artifacts
