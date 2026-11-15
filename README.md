@@ -62,9 +62,9 @@ See [deployment runbook](docs/runbooks/DEPLOYMENT.md). Production is not obtaine
 Full source files are in the repository. `node scripts/source-bundle.mjs` creates `docs/SOURCE_BUNDLE.md` with complete paths and contents, excluding secrets, lockfiles and generated output.
 
 Latest execution results and release limitations: [verification report](docs/VERIFICATION.md). Local backup/restore check: `./scripts/verify-restore.ps1` (stop writers for a consistent count comparison).
-# Интерактивная production-установка
+## Интерактивная установка в production
 
-На Ubuntu Server 22.04/24.04 из отдельной чистой копии проекта:
+Для установки на Ubuntu Server 22.04/24.04 используйте отдельную чистую копию проекта. Запустите установщик с правами администратора:
 
 ```sh
 sudo python3 scripts/install-production.py
@@ -72,5 +72,7 @@ sudo python3 scripts/install-production.py
 
 Установщик запросит домен, настройки администратора, продукта и внешнего аудита,
 подготовит секреты и запустит Docker-сервисы. Повторный запуск продолжает установку
-без сброса данных. Требования, ограничения и действия после запуска:
-[инструкция установщика](docs/runbooks/INSTALLER_RU.md).
+без сброса данных.
+
+Перед запуском ознакомьтесь с требованиями и ограничениями в
+[инструкции установщика](docs/runbooks/INSTALLER_RU.md). Там же описаны действия после установки.
